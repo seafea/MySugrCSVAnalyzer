@@ -13,7 +13,7 @@ namespace MySugrCSVAnalyzer
 {
     public partial class frmMain : Form
     {
-        private readonly Controllers.ReadInputController _inputFileController;
+        private readonly Interfaces.IReadInputController _inputFileController;
         public frmMain()
         {
             InitializeComponent();
@@ -40,6 +40,12 @@ namespace MySugrCSVAnalyzer
                     message: picker.FileName + " currently selected.",
                     visibility: true);
                 _inputFileController.readInputFile();
+                _inputFileController.LoadLogbookByDay();
+                int? averageHappyReadings = _inputFileController.GetAverageOfAllTaggedHappy();
+                if (averageHappyReadings != null)
+                {
+                    MessageBox.Show("Average of all readings tagged happy: " + averageHappyReadings.ToString());
+                }
             }
         }
 

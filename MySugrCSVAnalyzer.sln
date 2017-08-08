@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26430.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySugrCSVAnalyzer", "MySugrCSVAnalyzer\MySugrCSVAnalyzer.csproj", "{2943383C-A8F7-4130-8534-1E8CFB84CEF1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySugrCSVAnalyzer.Test", "MySugrCSVAnalyzer.Test\MySugrCSVAnalyzer.Test.csproj", "{646FB038-CE6F-47C4-AAFA-A04B48294045}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{2943383C-A8F7-4130-8534-1E8CFB84CEF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2943383C-A8F7-4130-8534-1E8CFB84CEF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2943383C-A8F7-4130-8534-1E8CFB84CEF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{646FB038-CE6F-47C4-AAFA-A04B48294045}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{646FB038-CE6F-47C4-AAFA-A04B48294045}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{646FB038-CE6F-47C4-AAFA-A04B48294045}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{646FB038-CE6F-47C4-AAFA-A04B48294045}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
