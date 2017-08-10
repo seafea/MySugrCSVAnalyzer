@@ -13,35 +13,35 @@ namespace MySugrCSVAnalyzer
 {
     public partial class frmMain : Form
     {
-        private readonly Interfaces.IReadInputController _inputFileController;
+        private readonly ReadInputController inputFileController;
         public frmMain()
         {
             InitializeComponent();
-            _inputFileController = new ReadInputController();
+            inputFileController = new ReadInputController();
         }
 
         private void btnLoadFile_Click(object sender, EventArgs e)
         {
             setLabelMessageAndVisibility(
-                label: lblErrorMessage,
-                message: "",
+                label: this.lblErrorMessage,
+                message: string.Empty,
                 visibility: false);
             setLabelMessageAndVisibility(
-                label: lblStatusMessage,
-                message: "",
+                label: this.lblStatusMessage,
+                message: string.Empty,
                 visibility: false);
             OpenFileDialog picker = new OpenFileDialog();
             DialogResult pickerResult = picker.ShowDialog();
             if (pickerResult == DialogResult.OK)
             {
-                _inputFileController.fileName = picker.FileName;
+                inputFileController.fileName = picker.FileName;
                 setLabelMessageAndVisibility(
-                    label: lblStatusMessage,
+                    label: this.lblStatusMessage,
                     message: picker.FileName + " currently selected.",
                     visibility: true);
-                _inputFileController.readInputFile();
-                _inputFileController.LoadLogbookByDay();
-                int? averageHappyReadings = _inputFileController.GetAverageOfAllTaggedHappy();
+                inputFileController.readInputFile();
+                inputFileController.LoadLogbookByDay();
+                int? averageHappyReadings = inputFileController.GetAverageOfReadingsWithSpecifiedTag("Happy");
                 if (averageHappyReadings != null)
                 {
                     MessageBox.Show("Average of all readings tagged happy: " + averageHappyReadings.ToString());

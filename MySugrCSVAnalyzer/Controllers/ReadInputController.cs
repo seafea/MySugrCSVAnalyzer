@@ -12,19 +12,30 @@ using MySugrCSVAnalyzer.Models;
 
 namespace MySugrCSVAnalyzer.Controllers
 {
-    public class ReadInputController : IReadInputController
+    using MySugrCSVAnalyzer.Repositories;
+
+    public class ReadInputController
     {
         public string fileName { get; set; }
-        public List<Entry> logbook { get; private set; }
-        public Dictionary<string, List<Entry>> logbookByDay { get; private set; }
+
+        private IInputRepository inputRepository;
         private int _numColumns;
+        private static readonly int DateColumn = 0;
+
+        private static readonly int TimeColumn = 1;
         public ReadInputController()
         {
-            logbook = new List<Entry>();
+            inputRepository = new InputRepository();
+        }
+
+        public ReadInputController(IInputRepository newInputRepository)
+        {
+            this.inputRepository = newInputRepository;
         }
 
         public void readInputFile()
         {
+            List<Entry> tempLogbook = new List<Entry>();
             string line = "";
             using (StreamReader input = new StreamReader(File.OpenRead(fileName)))
             {
@@ -36,9 +47,10 @@ namespace MySugrCSVAnalyzer.Controllers
                 while (!input.EndOfStream)
                 {
                     line = input.ReadLine();
-                    logbook.Add(parseLineToEntry(line));
+                    tempLogbook.Add(parseLineToEntry(line));
                 }
             }
+            inputRepository.setLogbook(newLogbook: tempLogbook);
         }
 
         // TODO how to make this private by making it a protected abstract method?
@@ -46,8 +58,8 @@ namespace MySugrCSVAnalyzer.Controllers
         {
             string[] pieces = new string[_numColumns];
             CSVHelper.DecodeLine(line, out pieces);
-            DateTime entryDate = Convert.ToDateTime(pieces[0]);
-            DateTime entryTime = Convert.ToDateTime(pieces[1]);
+            DateTime entryDate = Convert.ToDateTime(pieces[DateColumn]);
+            DateTime entryTime = Convert.ToDateTime(pieces[TimeColumn]);
             DateTime entryDateTime = new DateTime(entryDate.Year, entryDate.Month, entryDate.Day, entryTime.Hour,
                 entryTime.Minute, entryTime.Second);
             Entry newEntry = new Entry(entryDateTime);
@@ -85,7 +97,7 @@ namespace MySugrCSVAnalyzer.Controllers
         public Dictionary<string, int> GetDailyAverages()
         {
             Dictionary<string, int> results = new Dictionary<string, int>();
-            foreach (var dailyEntry in logbookByDay)
+            foreach (var dailyEntry in this.inputRepository.GetLogbookByDay())
             {
                 int numReadings = 0;
                 int average = 0;
@@ -107,39 +119,83 @@ namespace MySugrCSVAnalyzer.Controllers
 
         public void LoadLogbookByDay()
         {
-            logbookByDay = new Dictionary<string, List<Entry>>();
-            foreach (Entry entry in logbook)
+            Dictionary<string, List<Entry>> tempLogbookByDay = new Dictionary<string, List<Entry>>();
+            foreach (Entry entry in this.inputRepository.GetLogbook())
             {
-                if (!logbookByDay.ContainsKey(entry.entryDateTime.ToString("MM/dd/yyyy")))
+                if (!tempLogbookByDay.ContainsKey(entry.entryDateTime.ToString("MM/dd/yyyy")))
                 {
-                    logbookByDay[entry.entryDateTime.ToString("MM/dd/yyyy")] = new List<Entry>();
+                    tempLogbookByDay[entry.entryDateTime.ToString("MM/dd/yyyy")] = new List<Entry>();
                 }
-                logbookByDay[entry.entryDateTime.ToString("MM/dd/yyyy")].Add(entry);
+                tempLogbookByDay[entry.entryDateTime.ToString("MM/dd/yyyy")].Add(entry);
             }
+            this.inputRepository.setLogbookByDay(tempLogbookByDay);
         }
 
-        public int? GetAverageOfAllTaggedHappy()
+        public int? GetAverageOfReadingsWithSpecifiedTag(string tag)
         {
-            int averageOfAllReadingsTaggedHappy = 0;
+            int averageOfAllReadingsTagged = 0;
             int numberOfReadings = 0;
-            foreach (Entry entry in logbook)
+            foreach (var entry in this.inputRepository.GetLogbook())
             {
-                if (entry.tags.Contains("Happy") && entry.bloodGlucoseReading != null)
+                if (entry.tags.Contains(tag) && entry.bloodGlucoseReading != null)
                 {
-                    averageOfAllReadingsTaggedHappy += (int)entry.bloodGlucoseReading;
+                    averageOfAllReadingsTagged += (int) entry.bloodGlucoseReading;
                     numberOfReadings++;
                 }
             }
             if (numberOfReadings > 0)
             {
-                return averageOfAllReadingsTaggedHappy / numberOfReadings;
+                return averageOfAllReadingsTagged / numberOfReadings;
             }
             return null;
         }
 
-        public int? GetAverageOfReadingsWithSpecifiedTag(string[] tags)
+        public int? GetAverageOfReadingsWithSpecifiedTags(String[] tags, bool matchAll)
         {
-            
+            int averageOfAllReadingsTagged = 0;
+            int numberOfReadings = 0;
+            foreach (var entry in this.inputRepository.GetLogbook())
+            {
+                if (entry.bloodGlucoseReading != null)
+                {
+
+                    if (matchAll)
+                    {
+                        bool allfound = true;
+                        foreach (var tag in tags)
+                        {
+                            if (!entry.tags.Contains(tag))
+                            {
+                                allfound = false;
+                                break;
+                            }
+                            if (allfound)
+                            {
+                                averageOfAllReadingsTagged += (int)entry.bloodGlucoseReading;
+                                numberOfReadings++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var tag in tags)
+                        {
+                            bool found = false;
+                            if (entry.tags.Contains(tag))
+                            {
+                                averageOfAllReadingsTagged += (int) entry.bloodGlucoseReading;
+                                numberOfReadings++;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (numberOfReadings > 0)
+            {
+                return averageOfAllReadingsTagged / numberOfReadings;
+            }
+            return null;
         }
     }
 }

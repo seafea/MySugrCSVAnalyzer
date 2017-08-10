@@ -9,6 +9,8 @@ using NUnit.Framework;
 
 namespace MySugrCSVAnalyzer.Test
 {
+    using System.IO;
+
     [TestFixture]
     public class EntryTests
     {
