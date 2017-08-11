@@ -1,28 +1,41 @@
-﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using MySugrCSVAnalyzer.Interfaces;
-using MySugrCSVAnalyzer.Models;
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="ReadInputController.cs" company="New River Valley Community Services">
+//     Copyright (c) Sprocket Enterprises. All rights reserved.
+// </copyright>
+// <author>David Merryman</author>
+//-----------------------------------------------------------------------
 namespace MySugrCSVAnalyzer.Controllers
 {
+    using System;
+    using System.CodeDom.Compiler;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Runtime.InteropServices.WindowsRuntime;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Windows.Forms;
+    using MySugrCSVAnalyzer.Interfaces;
+    using MySugrCSVAnalyzer.Models;
     using MySugrCSVAnalyzer.Repositories;
 
     public class ReadInputController
     {
-        public string fileName { get; set; }
-
-        private IInputRepository inputRepository;
-        private int _numColumns;
         private static readonly int DateColumn = 0;
-
         private static readonly int TimeColumn = 1;
+        private static readonly int TagsColumn = 2;
+        private static readonly int BloodGlucoseColumn = 3;
+        private static readonly int InsulinInjectionMealColumn = 7;
+        private static readonly int InsulinInjectionCorrectionColumn = 8;
+        private static readonly int MealCarbohydratesColumn = 11;
+        private static readonly int MealDescriptionColumn = 12;
+        private static readonly int LocationColumn = 18;
+        private static readonly int FoodTypesColumn = 23;
+        private readonly IInputRepository inputRepository;
+        private int numColumns;
+
+        public string FileName { get; set; }
+
         public ReadInputController()
         {
             inputRepository = new InputRepository();
@@ -33,60 +46,59 @@ namespace MySugrCSVAnalyzer.Controllers
             this.inputRepository = newInputRepository;
         }
 
-        public void readInputFile()
+        public void ReadInputFile()
         {
             List<Entry> tempLogbook = new List<Entry>();
-            string line = "";
-            using (StreamReader input = new StreamReader(File.OpenRead(fileName)))
+            using (StreamReader input = new StreamReader(File.OpenRead(FileName)))
             {
+                string line;
                 if (!input.EndOfStream)
                 {
                     line = input.ReadLine();
-                    _numColumns = line.Split(',').Length;
+                    numColumns = line.Split(',').Length;
                 }
                 while (!input.EndOfStream)
                 {
                     line = input.ReadLine();
-                    tempLogbook.Add(parseLineToEntry(line));
+                    tempLogbook.Add(ParseLineToEntry(line));
                 }
             }
             inputRepository.setLogbook(newLogbook: tempLogbook);
         }
 
         // TODO how to make this private by making it a protected abstract method?
-        public Entry parseLineToEntry(string line)
+        public Entry ParseLineToEntry(string line)
         {
-            string[] pieces = new string[_numColumns];
+            string[] pieces = new string[numColumns];
             CSVHelper.DecodeLine(line, out pieces);
-            DateTime entryDate = Convert.ToDateTime(pieces[DateColumn]);
-            DateTime entryTime = Convert.ToDateTime(pieces[TimeColumn]);
-            DateTime entryDateTime = new DateTime(entryDate.Year, entryDate.Month, entryDate.Day, entryTime.Hour,
-                entryTime.Minute, entryTime.Second);
-            Entry newEntry = new Entry(entryDateTime);
-            string[] tags = pieces[2].Split(',');
+            Entry newEntry = new Entry(
+                newEntryDateTime: ParseDateAndTimeIntoOne(
+                    date: Convert.ToDateTime(pieces[DateColumn]),
+                    time: Convert.ToDateTime(pieces[TimeColumn])));
+            string[] tags = pieces[TagsColumn].Split(',');
             foreach (var tag in tags)
             {
                 newEntry.addTag(tag);
             }
-            if (pieces[3] != "")
+            if (pieces[BloodGlucoseColumn] != "")
             {
-                newEntry.bloodGlucoseReading = Int32.Parse(pieces[3]);
+                newEntry.bloodGlucoseReading = Int32.Parse(pieces[BloodGlucoseColumn]);
             }
-            if (pieces[7] != "")
+            if (pieces[InsulinInjectionMealColumn] != "")
             {
-                newEntry.insulinInjectionMeal = Double.Parse(pieces[7]);
+                newEntry.insulinInjectionMeal = Double.Parse(pieces[InsulinInjectionMealColumn]);
             }
-            if (pieces[8] != "")
+            if (pieces[InsulinInjectionCorrectionColumn] != "")
             {
-                newEntry.insulinInjectionCorrection = Double.Parse(pieces[8]);
+                newEntry.insulinInjectionCorrection = Double.Parse(pieces[InsulinInjectionCorrectionColumn]);
             }
-            if (pieces[11] != "")
+            if (pieces[MealCarbohydratesColumn] != "")
             {
-                newEntry.mealCarbohydrates = Int32.Parse(pieces[11]);
+                newEntry.mealCarbohydrates = Int32.Parse(pieces[MealCarbohydratesColumn]);
             }
-            newEntry.mealDescription = pieces[12];
-            newEntry.location = pieces[18];
-            string[] foodTypes = pieces[23].Split(',');
+            newEntry.mealDescription = pieces[MealDescriptionColumn];
+            newEntry.location = pieces[LocationColumn];
+            string[] foodTypes = pieces[FoodTypesColumn].Split(',');
             foreach (var foodType in foodTypes)
             {
                 newEntry.addFoodType(foodType);
@@ -169,11 +181,11 @@ namespace MySugrCSVAnalyzer.Controllers
                                 allfound = false;
                                 break;
                             }
-                            if (allfound)
-                            {
-                                averageOfAllReadingsTagged += (int)entry.bloodGlucoseReading;
-                                numberOfReadings++;
-                            }
+                        }
+                        if (allfound)
+                        {
+                            averageOfAllReadingsTagged += (int)entry.bloodGlucoseReading;
+                            numberOfReadings++;
                         }
                     }
                     else
@@ -196,6 +208,43 @@ namespace MySugrCSVAnalyzer.Controllers
                 return averageOfAllReadingsTagged / numberOfReadings;
             }
             return null;
+        }
+
+        public int? GetAverageOfReadingsWithAnySpecifiedTags(String[] tags)
+        {
+            int averageOfAllReadingsTagged = 0;
+            int numberOfReadings = 0;
+            foreach (var entry in this.inputRepository.GetLogbook())
+            {
+                if (entry.bloodGlucoseReading != null)
+                {
+                    foreach (var tag in tags)
+                    {
+                        if (entry.tags.Contains(tag))
+                        {
+                            averageOfAllReadingsTagged += (int)entry.bloodGlucoseReading;
+                            numberOfReadings++;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (numberOfReadings > 0)
+            {
+                return averageOfAllReadingsTagged / numberOfReadings;
+            }
+            return null;
+        }
+
+        private DateTime ParseDateAndTimeIntoOne(DateTime date, DateTime time)
+        {
+            return new DateTime(
+                year: date.Year,
+                month: date.Month,
+                day: date.Day,
+                hour: time.Hour,
+                minute: time.Minute,
+                second: time.Second);
         }
     }
 }

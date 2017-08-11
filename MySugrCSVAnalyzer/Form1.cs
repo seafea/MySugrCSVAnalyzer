@@ -34,12 +34,12 @@ namespace MySugrCSVAnalyzer
             DialogResult pickerResult = picker.ShowDialog();
             if (pickerResult == DialogResult.OK)
             {
-                inputFileController.fileName = picker.FileName;
+                inputFileController.FileName = picker.FileName;
                 setLabelMessageAndVisibility(
                     label: this.lblStatusMessage,
                     message: picker.FileName + " currently selected.",
                     visibility: true);
-                inputFileController.readInputFile();
+                inputFileController.ReadInputFile();
                 inputFileController.LoadLogbookByDay();
                 int? averageHappyReadings = inputFileController.GetAverageOfReadingsWithSpecifiedTag("Happy");
                 if (averageHappyReadings != null)
